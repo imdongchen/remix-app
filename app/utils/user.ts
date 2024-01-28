@@ -23,3 +23,7 @@ export function useUser() {
 	}
 	return maybeUser
 }
+
+export function getUserName(user: { firstName: string; lastName: string }) {
+	return `${user.firstName} ${user.lastName}`
+}

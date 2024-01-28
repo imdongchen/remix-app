@@ -31,7 +31,6 @@ import { redirectWithToast } from '#app/utils/toast.server.ts'
 import {
 	NameSchema,
 	PasswordAndConfirmPasswordSchema,
-	UsernameSchema,
 } from '#app/utils/user-validation.ts'
 import { verifySessionStorage } from '#app/utils/verification.server.ts'
 import { type VerifyFunctionArgs } from './verify.tsx'
@@ -40,12 +39,8 @@ const onboardingEmailSessionKey = 'onboardingEmail'
 
 const SignupFormSchema = z
 	.object({
-		username: UsernameSchema,
-		name: NameSchema,
-		agreeToTermsOfServiceAndPrivacyPolicy: z.boolean({
-			required_error:
-				'You must agree to the terms of service and privacy policy',
-		}),
+		firstName: NameSchema,
+		lastName: NameSchema,
 		remember: z.boolean().optional(),
 		redirectTo: z.string().optional(),
 	})
@@ -74,20 +69,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	checkHoneypot(formData)
 	const submission = await parse(formData, {
 		schema: intent =>
-			SignupFormSchema.superRefine(async (data, ctx) => {
-				const existingUser = await prisma.user.findUnique({
-					where: { username: data.username },
-					select: { id: true },
-				})
-				if (existingUser) {
-					ctx.addIssue({
-						path: ['username'],
-						code: z.ZodIssueCode.custom,
-						message: 'A user already exists with this username',
-					})
-					return
-				}
-			}).transform(async data => {
+			SignupFormSchema.transform(async data => {
 				if (intent !== 'submit') return { ...data, session: null }
 
 				const session = await signup({ ...data, email })
@@ -180,21 +162,28 @@ export default function SignupRoute() {
 					<AuthenticityTokenInput />
 					<HoneypotInputs />
 					<Field
-						labelProps={{ htmlFor: fields.username.id, children: 'Username' }}
-						inputProps={{
-							...conform.input(fields.username),
-							autoComplete: 'username',
-							className: 'lowercase',
+						labelProps={{
+							htmlFor: fields.firstName.id,
+							children: 'First Name',
 						}}
-						errors={fields.username.errors}
+						inputProps={{
+							...conform.input(fields.firstName),
+							autoComplete: 'given-name',
+							className: 'capitalize',
+						}}
+						errors={fields.firstName.errors}
 					/>
 					<Field
-						labelProps={{ htmlFor: fields.name.id, children: 'Name' }}
-						inputProps={{
-							...conform.input(fields.name),
-							autoComplete: 'name',
+						labelProps={{
+							htmlFor: fields.lastName.id,
+							children: 'Last Name',
 						}}
-						errors={fields.name.errors}
+						inputProps={{
+							...conform.input(fields.lastName),
+							autoComplete: 'family-name',
+							className: 'capitalize',
+						}}
+						errors={fields.lastName.errors}
 					/>
 					<Field
 						labelProps={{ htmlFor: fields.password.id, children: 'Password' }}
@@ -217,18 +206,6 @@ export default function SignupRoute() {
 						errors={fields.confirmPassword.errors}
 					/>
 
-					<CheckboxField
-						labelProps={{
-							htmlFor: fields.agreeToTermsOfServiceAndPrivacyPolicy.id,
-							children:
-								'Do you agree to our Terms of Service and Privacy Policy?',
-						}}
-						buttonProps={conform.input(
-							fields.agreeToTermsOfServiceAndPrivacyPolicy,
-							{ type: 'checkbox' },
-						)}
-						errors={fields.agreeToTermsOfServiceAndPrivacyPolicy.errors}
-					/>
 					<CheckboxField
 						labelProps={{
 							htmlFor: fields.remember.id,
