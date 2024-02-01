@@ -6,7 +6,8 @@ import bcrypt from 'bcryptjs'
 export function createUser() {
 	const firstName = faker.person.firstName()
 	const lastName = faker.person.lastName()
-	const email = faker.internet.email({ firstName, lastName })
+	// In the app, we always lowercase the email via schema validation but in e2e tests we sometimes bypass schema validation and do db operations directly. Use lower case email to avoid case sensitivity issues.
+	const email = faker.internet.email({ firstName, lastName }).toLowerCase()
 
 	return { firstName, lastName, email }
 }

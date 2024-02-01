@@ -5,7 +5,7 @@ import { Authenticator } from 'remix-auth'
 import { safeRedirect } from 'remix-utils/safe-redirect'
 import { connectionSessionStorage, providers } from './connections.server.ts'
 import { prisma } from './db.server.ts'
-import { capitalizeFirstLetter, combineHeaders, downloadFile } from './misc.tsx'
+import { combineHeaders, downloadFile } from './misc.tsx'
 import { type ProviderUser } from './providers/provider.ts'
 import { authSessionStorage } from './session.server.ts'
 
@@ -77,10 +77,7 @@ export async function login({
 	email: User['email']
 	password: string
 }) {
-	const user = await verifyUserPassword(
-		{ email: email.toLowerCase() },
-		password,
-	)
+	const user = await verifyUserPassword({ email }, password)
 	if (!user) return null
 	const session = await prisma.session.create({
 		select: { id: true, expirationDate: true, userId: true },
@@ -125,9 +122,9 @@ export async function signup({
 			expirationDate: getSessionExpirationDate(),
 			user: {
 				create: {
-					email: email.toLowerCase(),
-					firstName: capitalizeFirstLetter(firstName.toLowerCase()),
-					lastName: capitalizeFirstLetter(lastName.toLowerCase()),
+					email,
+					firstName,
+					lastName,
 					roles: { connect: { name: 'user' } },
 					password: {
 						create: {
@@ -163,9 +160,9 @@ export async function signupWithConnection({
 			expirationDate: getSessionExpirationDate(),
 			user: {
 				create: {
-					email: email.toLowerCase(),
-					firstName: capitalizeFirstLetter(firstName.toLowerCase()),
-					lastName: capitalizeFirstLetter(lastName.toLowerCase()),
+					email,
+					firstName,
+					lastName,
 					roles: { connect: { name: 'user' } },
 					connections: { create: { providerId, providerName } },
 					image: imageUrl

@@ -1,13 +1,17 @@
 import { z } from 'zod'
+import { capitalizeFirstLetter } from './misc'
 
 export const PasswordSchema = z
 	.string({ required_error: 'Password is required' })
 	.min(6, { message: 'Password must be at least 6 characters' })
 	.max(100, { message: 'Password is too long' })
+
 export const NameSchema = z
 	.string({ required_error: 'Name is required' })
 	.min(3, { message: 'Name is too short' })
 	.max(40, { message: 'Name is too long' })
+	.transform(value => capitalizeFirstLetter(value.trim().toLowerCase()))
+
 export const EmailSchema = z
 	.string({ required_error: 'Email is required' })
 	.email({ message: 'Email is invalid' })
