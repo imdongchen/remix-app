@@ -11,10 +11,10 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(cuid())
-  email    String  @unique
-  username String  @unique
-  name     String?
+  id        String @id @default(cuid())
+  email     String @unique
+  firstName String @default("")
+  lastName  String @default("")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -25,6 +25,8 @@ model User {
   roles       Role[]
   sessions    Session[]
   connections Connection[]
+  Company     Company?     @relation(fields: [companyId], references: [id])
+  companyId   String?
 }
 
 model Note {
@@ -166,4 +168,31 @@ model Connection {
   userId String
 
   @@unique([providerName, providerId])
+}
+
+model Company {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  address   Address? @relation(fields: [addressId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  addressId String
+}
+
+model Address {
+  id      String @id @default(cuid())
+  street  String
+  city    String
+  state   String
+  zip     String
+  country String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companies Company[]
 }

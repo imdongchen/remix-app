@@ -6,7 +6,7 @@ import { expect, test } from '#tests/playwright-utils.ts'
 
 test('Users can create note with an image', async ({ page, login }) => {
 	const user = await login()
-	await page.goto(`/users/${user.username}/notes`)
+	await page.goto(`/users/${user.id}/notes`)
 
 	const newNote = createNote()
 	const altText = 'cute koala'
@@ -22,14 +22,14 @@ test('Users can create note with an image', async ({ page, login }) => {
 	await page.getByRole('textbox', { name: 'alt text' }).fill(altText)
 
 	await page.getByRole('button', { name: 'submit' }).click()
-	await expect(page).toHaveURL(new RegExp(`/users/${user.username}/notes/.*`))
+	await expect(page).toHaveURL(new RegExp(`/users/${user.id}/notes/.*`))
 	await expect(page.getByRole('heading', { name: newNote.title })).toBeVisible()
 	await expect(page.getByAltText(altText)).toBeVisible()
 })
 
 test('Users can create note with multiple images', async ({ page, login }) => {
 	const user = await login()
-	await page.goto(`/users/${user.username}/notes`)
+	await page.goto(`/users/${user.id}/notes`)
 
 	const newNote = createNote()
 	const altText1 = 'cute koala'
@@ -53,7 +53,7 @@ test('Users can create note with multiple images', async ({ page, login }) => {
 	await page.getByLabel('alt text').nth(1).fill(altText2)
 
 	await page.getByRole('button', { name: 'submit' }).click()
-	await expect(page).toHaveURL(new RegExp(`/users/${user.username}/notes/.*`))
+	await expect(page).toHaveURL(new RegExp(`/users/${user.id}/notes/.*`))
 	await expect(page.getByRole('heading', { name: newNote.title })).toBeVisible()
 	await expect(page.getByAltText(altText1)).toBeVisible()
 	await expect(page.getByAltText(altText2)).toBeVisible()
@@ -69,7 +69,7 @@ test('Users can edit note image', async ({ page, login }) => {
 			ownerId: user.id,
 		},
 	})
-	await page.goto(`/users/${user.username}/notes/${note.id}`)
+	await page.goto(`/users/${user.id}/notes/${note.id}`)
 
 	// edit the image
 	await page.getByRole('link', { name: 'Edit', exact: true }).click()
@@ -81,7 +81,7 @@ test('Users can edit note image', async ({ page, login }) => {
 	await page.getByLabel('alt text').nth(0).fill(updatedImage.altText)
 	await page.getByRole('button', { name: 'submit' }).click()
 
-	await expect(page).toHaveURL(new RegExp(`/users/${user.username}/notes/.*`))
+	await expect(page).toHaveURL(new RegExp(`/users/${user.id}/notes/.*`))
 	await expect(page.getByAltText(updatedImage.altText)).toBeVisible()
 })
 
@@ -95,7 +95,7 @@ test('Users can delete note image', async ({ page, login }) => {
 			ownerId: user.id,
 		},
 	})
-	await page.goto(`/users/${user.username}/notes/${note.id}`)
+	await page.goto(`/users/${user.id}/notes/${note.id}`)
 
 	await expect(page.getByRole('heading', { name: note.title })).toBeVisible()
 	// find image tags
@@ -108,7 +108,7 @@ test('Users can delete note image', async ({ page, login }) => {
 	await page.getByRole('link', { name: 'Edit', exact: true }).click()
 	await page.getByRole('button', { name: 'remove image' }).click()
 	await page.getByRole('button', { name: 'submit' }).click()
-	await expect(page).toHaveURL(new RegExp(`/users/${user.username}/notes/.*`))
+	await expect(page).toHaveURL(new RegExp(`/users/${user.id}/notes/.*`))
 	const countAfter = await images.count()
 	expect(countAfter).toEqual(countBefore - 1)
 })

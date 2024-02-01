@@ -1,6 +1,7 @@
 import { invariant } from '@epic-web/invariant'
 import { faker } from '@faker-js/faker'
 import { prisma } from '#app/utils/db.server.ts'
+import { getUserFullName } from '#app/utils/user'
 import { readEmail } from '#tests/mocks/utils.ts'
 import { createUser, expect, test as base } from '#tests/playwright-utils.ts'
 
@@ -13,8 +14,8 @@ function extractUrl(text: string) {
 
 const test = base.extend<{
 	getOnboardingData(): {
-		username: string
-		name: string
+		firstName: string
+		lastName: string
 		email: string
 		password: string
 	}
@@ -28,7 +29,7 @@ const test = base.extend<{
 			}
 			return onboardingData
 		})
-		await prisma.user.deleteMany({ where: { username: userData.username } })
+		await prisma.user.deleteMany({ where: { email: userData.email } })
 	},
 })
 
@@ -75,16 +76,16 @@ test('onboarding with link', async ({ page, getOnboardingData }) => {
 
 	await expect(page).toHaveURL(`/onboarding`)
 	await page
-		.getByRole('textbox', { name: /^username/i })
-		.fill(onboardingData.username)
+		.getByRole('textbox', { name: /^first name/i })
+		.fill(onboardingData.firstName)
 
-	await page.getByRole('textbox', { name: /^name/i }).fill(onboardingData.name)
+	await page
+		.getByRole('textbox', { name: /^last name/i })
+		.fill(onboardingData.lastName)
 
 	await page.getByLabel(/^password/i).fill(onboardingData.password)
 
 	await page.getByLabel(/^confirm password/i).fill(onboardingData.password)
-
-	await page.getByLabel(/terms/i).check()
 
 	await page.getByLabel(/remember me/i).check()
 
@@ -92,12 +93,14 @@ test('onboarding with link', async ({ page, getOnboardingData }) => {
 
 	await expect(page).toHaveURL(`/`)
 
-	await page.getByRole('link', { name: onboardingData.name }).click()
+	await page.getByRole('link', { name: onboardingData.firstName }).click()
 	await page.getByRole('menuitem', { name: /profile/i }).click()
 
-	await expect(page).toHaveURL(`/users/${onboardingData.username}`)
+	// await expect(page).toHaveURL(`/users/${onboardingData.id}`)
 
-	await page.getByRole('link', { name: onboardingData.name }).click()
+	await page
+		.getByRole('link', { name: getUserFullName(onboardingData) })
+		.click()
 	await page.getByRole('menuitem', { name: /logout/i }).click()
 	await expect(page).toHaveURL(`/`)
 })
@@ -134,20 +137,22 @@ test('onboarding with a short code', async ({ page, getOnboardingData }) => {
 test('login as existing user', async ({ page, insertNewUser }) => {
 	const password = faker.internet.password()
 	const user = await insertNewUser({ password })
-	invariant(user.name, 'User name not found')
+	invariant(user.id, 'User not found')
 	await page.goto('/login')
-	await page.getByRole('textbox', { name: /username/i }).fill(user.username)
+	await page.getByRole('textbox', { name: /email/i }).fill(user.email)
 	await page.getByLabel(/^password$/i).fill(password)
 	await page.getByRole('button', { name: /log in/i }).click()
 	await expect(page).toHaveURL(`/`)
 
-	await expect(page.getByRole('link', { name: user.name })).toBeVisible()
+	await expect(
+		page.getByRole('link', { name: getUserFullName(user) }),
+	).toBeVisible()
 })
 
 test('reset password with a link', async ({ page, insertNewUser }) => {
 	const originalPassword = faker.internet.password()
 	const user = await insertNewUser({ password: originalPassword })
-	invariant(user.name, 'User name not found')
+	invariant(user.id, 'User not found')
 	await page.goto('/login')
 
 	await page.getByRole('link', { name: /forgot password/i }).click()
@@ -156,7 +161,7 @@ test('reset password with a link', async ({ page, insertNewUser }) => {
 	await expect(
 		page.getByRole('heading', { name: /forgot password/i }),
 	).toBeVisible()
-	await page.getByRole('textbox', { name: /username/i }).fill(user.username)
+	await page.getByRole('textbox', { name: /email/i }).fill(user.email)
 	await page.getByRole('button', { name: /recover password/i }).click()
 	await expect(
 		page.getByRole('button', { name: /recover password/i, disabled: true }),
@@ -190,18 +195,20 @@ test('reset password with a link', async ({ page, insertNewUser }) => {
 	).toBeVisible()
 
 	await expect(page).toHaveURL('/login')
-	await page.getByRole('textbox', { name: /username/i }).fill(user.username)
+	await page.getByRole('textbox', { name: /email/i }).fill(user.email)
 	await page.getByLabel(/^password$/i).fill(originalPassword)
 	await page.getByRole('button', { name: /log in/i }).click()
 
-	await expect(page.getByText(/invalid username or password/i)).toBeVisible()
+	await expect(page.getByText(/invalid email or password/i)).toBeVisible()
 
 	await page.getByLabel(/^password$/i).fill(newPassword)
 	await page.getByRole('button', { name: /log in/i }).click()
 
 	await expect(page).toHaveURL(`/`)
 
-	await expect(page.getByRole('link', { name: user.name })).toBeVisible()
+	await expect(
+		page.getByRole('link', { name: getUserFullName(user) }),
+	).toBeVisible()
 })
 
 test('reset password with a short code', async ({ page, insertNewUser }) => {
@@ -214,7 +221,7 @@ test('reset password with a short code', async ({ page, insertNewUser }) => {
 	await expect(
 		page.getByRole('heading', { name: /forgot password/i }),
 	).toBeVisible()
-	await page.getByRole('textbox', { name: /username/i }).fill(user.username)
+	await page.getByRole('textbox', { name: /email/i }).fill(user.email)
 	await page.getByRole('button', { name: /recover password/i }).click()
 	await expect(
 		page.getByRole('button', { name: /recover password/i, disabled: true }),

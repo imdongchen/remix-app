@@ -23,3 +23,12 @@ export function useUser() {
 	}
 	return maybeUser
 }
+
+export function getUserFullName(
+	user: { firstName: string | null; lastName: string | null } | undefined,
+) {
+	if (!user) {
+		return ''
+	}
+	return `${user.firstName} ${user.lastName}`
+}

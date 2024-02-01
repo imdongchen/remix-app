@@ -31,7 +31,7 @@ import {
 	userHasPermission,
 } from '#app/utils/permissions.ts'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
-import { useOptionalUser } from '#app/utils/user.ts'
+import { getUserFullName, useOptionalUser } from '#app/utils/user.ts'
 import { type loader as notesLoader } from './notes.tsx'
 
 export async function loader({ params }: LoaderFunctionArgs) {
@@ -85,7 +85,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	const { noteId } = submission.value
 
 	const note = await prisma.note.findFirst({
-		select: { id: true, ownerId: true, owner: { select: { username: true } } },
+		select: { id: true, ownerId: true, owner: { select: { id: true } } },
 		where: { id: noteId },
 	})
 	invariantResponse(note, 'Not found', { status: 404 })
@@ -98,7 +98,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	await prisma.note.delete({ where: { id: note.id } })
 
-	return redirectWithToast(`/users/${note.owner.username}/notes`, {
+	return redirectWithToast(`/users/${note.owner.id}/notes`, {
 		type: 'success',
 		title: 'Success',
 		description: 'Your note has been deleted.',
@@ -194,12 +194,10 @@ export function DeleteNote({ id }: { id: string }) {
 
 export const meta: MetaFunction<
 	typeof loader,
-	{ 'routes/users+/$username_+/notes': typeof notesLoader }
-> = ({ data, params, matches }) => {
-	const notesMatch = matches.find(
-		m => m.id === 'routes/users+/$username_+/notes',
-	)
-	const displayName = notesMatch?.data?.owner.name ?? params.username
+	{ 'routes/users+/$userId+/notes': typeof notesLoader }
+> = ({ data, matches }) => {
+	const notesMatch = matches.find(m => m.id === 'routes/users+/$userId+/notes')
+	const displayName = getUserFullName(notesMatch?.data?.owner)
 	const noteTitle = data?.note.title ?? 'Note'
 	const noteContentsSummary =
 		data && data.note.content.length > 100

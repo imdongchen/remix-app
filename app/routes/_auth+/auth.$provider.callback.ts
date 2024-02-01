@@ -67,7 +67,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 				'/settings/profile/connections',
 				{
 					title: 'Already Connected',
-					description: `Your "${profile.username}" ${label} account is already connected.`,
+					description: `Your "${profile.email}" ${label} account is already connected.`,
 				},
 				{ headers: destroyRedirectTo },
 			)
@@ -76,7 +76,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 				'/settings/profile/connections',
 				{
 					title: 'Already Connected',
-					description: `The "${profile.username}" ${label} account is already connected to another account.`,
+					description: `The "${profile.email}" ${label} account is already connected to another account.`,
 				},
 				{ headers: destroyRedirectTo },
 			)
@@ -97,7 +97,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			{
 				title: 'Connected',
 				type: 'success',
-				description: `Your "${profile.username}" ${label} account has been connected.`,
+				description: `Your "${profile.email}" ${label} account has been connected.`,
 			},
 			{ headers: destroyRedirectTo },
 		)
@@ -127,7 +127,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			{
 				headers: await createToastHeaders({
 					title: 'Connected',
-					description: `Your "${profile.username}" ${label} account has been connected.`,
+					description: `Your "${profile.email}" ${label} account has been connected.`,
 				}),
 			},
 		)
@@ -139,7 +139,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	verifySession.set(prefilledProfileKey, {
 		...profile,
 		email: profile.email.toLowerCase(),
-		username: profile.username?.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase(),
 	})
 	verifySession.set(providerIdKey, profile.id)
 	const onboardingRedirect = [
