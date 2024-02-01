@@ -20,7 +20,7 @@ import { prisma } from '#app/utils/db.server.ts'
 import { getUserImgSrc, useDoubleCheck } from '#app/utils/misc.tsx'
 import { authSessionStorage } from '#app/utils/session.server.ts'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
-import { NameSchema } from '#app/utils/user-validation.ts'
+import { NameSchema, UsernameSchema } from '#app/utils/user-validation.ts'
 import { twoFAVerificationType } from './profile.two-factor.tsx'
 
 export const handle: SEOHandle = {
@@ -28,8 +28,8 @@ export const handle: SEOHandle = {
 }
 
 const ProfileFormSchema = z.object({
-	firstName: NameSchema.optional(),
-	lastName: NameSchema.optional(),
+	name: NameSchema.optional(),
+	username: UsernameSchema,
 })
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -38,9 +38,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		where: { id: userId },
 		select: {
 			id: true,
-			firstName: true,
-			lastName: true,
+			name: true,
+			username: true,
 			email: true,
+			image: {
+				select: { id: true },
+			},
 			_count: {
 				select: {
 					sessions: {
@@ -107,6 +110,11 @@ export default function EditUserProfile() {
 		<div className="flex flex-col gap-12">
 			<div className="flex justify-center">
 				<div className="relative h-52 w-52">
+					<img
+						src={getUserImgSrc(data.user.image?.id)}
+						alt={data.user.username}
+						className="h-full w-full rounded-full object-cover"
+					/>
 					<Button
 						asChild
 						variant="outline"
@@ -174,7 +182,19 @@ export default function EditUserProfile() {
 async function profileUpdateAction({ userId, formData }: ProfileActionArgs) {
 	const submission = await parse(formData, {
 		async: true,
-		schema: ProfileFormSchema,
+		schema: ProfileFormSchema.superRefine(async ({ username }, ctx) => {
+			const existingUsername = await prisma.user.findUnique({
+				where: { username },
+				select: { id: true },
+			})
+			if (existingUsername && existingUsername.id !== userId) {
+				ctx.addIssue({
+					path: ['username'],
+					code: z.ZodIssueCode.custom,
+					message: 'A user already exists with this username',
+				})
+			}
+		}),
 	})
 	if (submission.intent !== 'submit') {
 		return json({ status: 'idle', submission } as const)
@@ -186,11 +206,11 @@ async function profileUpdateAction({ userId, formData }: ProfileActionArgs) {
 	const data = submission.value
 
 	await prisma.user.update({
-		select: { id: true },
+		select: { username: true },
 		where: { id: userId },
 		data: {
-			firstName: data.firstName,
-			lastName: data.lastName,
+			name: data.name,
+			username: data.username,
 		},
 	})
 
@@ -210,8 +230,9 @@ function UpdateProfile() {
 			return parse(formData, { schema: ProfileFormSchema })
 		},
 		defaultValue: {
-			firstName: data.user.firstName ?? '',
-			lastName: data.user.lastName ?? '',
+			username: data.user.username,
+			name: data.user.name ?? '',
+			email: data.user.email,
 		},
 	})
 
@@ -222,17 +243,17 @@ function UpdateProfile() {
 				<Field
 					className="col-span-3"
 					labelProps={{
-						htmlFor: fields.firstName.id,
-						children: 'First Name',
+						htmlFor: fields.username.id,
+						children: 'Username',
 					}}
-					inputProps={conform.input(fields.firstName)}
-					errors={fields.firstName.errors}
+					inputProps={conform.input(fields.username)}
+					errors={fields.username.errors}
 				/>
 				<Field
 					className="col-span-3"
-					labelProps={{ htmlFor: fields.lastName.id, children: 'Last Name' }}
-					inputProps={conform.input(fields.lastName)}
-					errors={fields.lastName.errors}
+					labelProps={{ htmlFor: fields.name.id, children: 'Name' }}
+					inputProps={conform.input(fields.name)}
+					errors={fields.name.errors}
 				/>
 			</div>
 

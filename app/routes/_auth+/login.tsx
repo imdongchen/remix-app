@@ -34,7 +34,7 @@ import { checkHoneypot } from '#app/utils/honeypot.server.ts'
 import { combineResponseInits, useIsPending } from '#app/utils/misc.tsx'
 import { authSessionStorage } from '#app/utils/session.server.ts'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
-import { EmailSchema, PasswordSchema } from '#app/utils/user-validation.ts'
+import { PasswordSchema, UsernameSchema } from '#app/utils/user-validation.ts'
 import { verifySessionStorage } from '#app/utils/verification.server.ts'
 import { getRedirectToUrl, type VerifyFunctionArgs } from './verify.tsx'
 
@@ -183,7 +183,7 @@ export async function shouldRequestTwoFA(request: Request) {
 }
 
 const LoginFormSchema = z.object({
-	email: EmailSchema,
+	username: UsernameSchema,
 	password: PasswordSchema,
 	redirectTo: z.string().optional(),
 	remember: z.boolean().optional(),
@@ -273,14 +273,14 @@ export default function LoginPage() {
 							<AuthenticityTokenInput />
 							<HoneypotInputs />
 							<Field
-								labelProps={{ children: 'Email' }}
+								labelProps={{ children: 'Username' }}
 								inputProps={{
-									...conform.input(fields.email),
+									...conform.input(fields.username),
 									autoFocus: true,
 									className: 'lowercase',
-									autoComplete: 'email',
+									autoComplete: 'username',
 								}}
-								errors={fields.email.errors}
+								errors={fields.username.errors}
 							/>
 
 							<Field

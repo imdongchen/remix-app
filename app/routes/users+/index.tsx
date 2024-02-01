@@ -5,13 +5,13 @@ import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { ErrorList } from '#app/components/forms.tsx'
 import { SearchBar } from '#app/components/search-bar.tsx'
 import { prisma } from '#app/utils/db.server.ts'
-import { cn, useDelayedIsPending } from '#app/utils/misc.tsx'
-import { getUserName } from '#app/utils/user'
+import { cn, getUserImgSrc, useDelayedIsPending } from '#app/utils/misc.tsx'
 
 const UserSearchResultSchema = z.object({
 	id: z.string(),
-	firstName: z.string(),
-	lastName: z.string(),
+	username: z.string(),
+	name: z.string().nullable(),
+	imageId: z.string().nullable(),
 })
 
 const UserSearchResultsSchema = z.array(UserSearchResultSchema)
@@ -24,10 +24,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 	const like = `%${searchTerm ?? ''}%`
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.firstName, User.lastName
+		SELECT User.id, User.username, User.name, UserImage.id AS imageId
 		FROM User
-		WHERE User.lastName LIKE ${like}
-		OR User.firstName LIKE ${like}
+		LEFT JOIN UserImage ON User.id = UserImage.userId
+		WHERE User.username LIKE ${like}
+		OR User.name LIKE ${like}
 		ORDER BY (
 			SELECT Note.updatedAt
 			FROM Note
@@ -76,11 +77,21 @@ export default function UsersRoute() {
 							{data.users.map(user => (
 								<li key={user.id}>
 									<Link
-										to={user.id}
+										to={user.username}
 										className="flex h-36 w-44 flex-col items-center justify-center rounded-lg bg-muted px-5 py-3"
 									>
-										<span className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-body-md">
-											{getUserName(user)}
+										<img
+											alt={user.name ?? user.username}
+											src={getUserImgSrc(user.imageId)}
+											className="h-16 w-16 rounded-full"
+										/>
+										{user.name ? (
+											<span className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-body-md">
+												{user.name}
+											</span>
+										) : null}
+										<span className="w-full overflow-hidden text-ellipsis text-center text-body-sm text-muted-foreground">
+											{user.username}
 										</span>
 									</Link>
 								</li>

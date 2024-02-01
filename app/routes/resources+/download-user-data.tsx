@@ -13,6 +13,26 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		// want to send back the entire blob of the image. We'll send a URL they can
 		// use to download it instead.
 		include: {
+			image: {
+				select: {
+					id: true,
+					createdAt: true,
+					updatedAt: true,
+					contentType: true,
+				},
+			},
+			notes: {
+				include: {
+					images: {
+						select: {
+							id: true,
+							createdAt: true,
+							updatedAt: true,
+							contentType: true,
+						},
+					},
+				},
+			},
 			password: false, // <-- intentionally omit password
 			sessions: true,
 			roles: true,
@@ -22,6 +42,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const domain = getDomainUrl(request)
 
 	return json({
-		user,
+		user: {
+			...user,
+			image: user.image
+				? {
+						...user.image,
+						url: `${domain}/resources/user-images/${user.image.id}`,
+				  }
+				: null,
+			notes: user.notes.map(note => ({
+				...note,
+				images: note.images.map(image => ({
+					...image,
+					url: `${domain}/resources/note-images/${image.id}`,
+				})),
+			})),
+		},
 	})
 }

@@ -5,7 +5,7 @@ import { Authenticator } from 'remix-auth'
 import { safeRedirect } from 'remix-utils/safe-redirect'
 import { connectionSessionStorage, providers } from './connections.server.ts'
 import { prisma } from './db.server.ts'
-import { capitalizeFirstLetter, combineHeaders, downloadFile } from './misc.tsx'
+import { combineHeaders, downloadFile } from './misc.tsx'
 import { type ProviderUser } from './providers/provider.ts'
 import { authSessionStorage } from './session.server.ts'
 
@@ -71,13 +71,13 @@ export async function requireAnonymous(request: Request) {
 }
 
 export async function login({
-	email,
+	username,
 	password,
 }: {
-	email: User['email']
+	username: User['username']
 	password: string
 }) {
-	const user = await verifyUserPassword({ email }, password)
+	const user = await verifyUserPassword({ username }, password)
 	if (!user) return null
 	const session = await prisma.session.create({
 		select: { id: true, expirationDate: true, userId: true },
@@ -90,15 +90,15 @@ export async function login({
 }
 
 export async function resetUserPassword({
-	email,
+	username,
 	password,
 }: {
-	email: User['email']
+	username: User['username']
 	password: string
 }) {
 	const hashedPassword = await getPasswordHash(password)
 	return prisma.user.update({
-		where: { email },
+		where: { username },
 		data: {
 			password: {
 				update: {
@@ -111,10 +111,15 @@ export async function resetUserPassword({
 
 export async function signup({
 	email,
+	username,
 	password,
-	firstName,
-	lastName,
-}: Pick<User, 'email' | 'firstName' | 'lastName'> & { password: string }) {
+	name,
+}: {
+	email: User['email']
+	username: User['username']
+	name: User['name']
+	password: string
+}) {
 	const hashedPassword = await getPasswordHash(password)
 
 	const session = await prisma.session.create({
@@ -123,8 +128,8 @@ export async function signup({
 			user: {
 				create: {
 					email: email.toLowerCase(),
-					firstName: capitalizeFirstLetter(firstName.toLowerCase()),
-					lastName: capitalizeFirstLetter(lastName.toLowerCase()),
+					username: username.toLowerCase(),
+					name,
 					roles: { connect: { name: 'user' } },
 					password: {
 						create: {
@@ -142,15 +147,15 @@ export async function signup({
 
 export async function signupWithConnection({
 	email,
-	firstName,
-	lastName,
+	username,
+	name,
 	providerId,
 	providerName,
 	imageUrl,
 }: {
 	email: User['email']
-	firstName: User['firstName']
-	lastName: User['lastName']
+	username: User['username']
+	name: User['name']
 	providerId: Connection['providerId']
 	providerName: Connection['providerName']
 	imageUrl?: string
@@ -161,10 +166,13 @@ export async function signupWithConnection({
 			user: {
 				create: {
 					email: email.toLowerCase(),
-					firstName: capitalizeFirstLetter(firstName.toLowerCase()),
-					lastName: capitalizeFirstLetter(lastName.toLowerCase()),
+					username: username.toLowerCase(),
+					name,
 					roles: { connect: { name: 'user' } },
 					connections: { create: { providerId, providerName } },
+					image: imageUrl
+						? { create: await downloadFile(imageUrl) }
+						: undefined,
 				},
 			},
 		},
@@ -210,7 +218,7 @@ export async function getPasswordHash(password: string) {
 }
 
 export async function verifyUserPassword(
-	where: Pick<User, 'email'> | Pick<User, 'id'>,
+	where: Pick<User, 'username'> | Pick<User, 'id'>,
 	password: Password['hash'],
 ) {
 	const userWithPassword = await prisma.user.findUnique({
