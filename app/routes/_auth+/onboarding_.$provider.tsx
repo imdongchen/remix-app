@@ -31,7 +31,7 @@ import { prisma } from '#app/utils/db.server.ts'
 import { useIsPending } from '#app/utils/misc.tsx'
 import { authSessionStorage } from '#app/utils/session.server.ts'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
-import { NameSchema, UsernameSchema } from '#app/utils/user-validation.ts'
+import { EmailSchema, NameSchema } from '#app/utils/user-validation.ts'
 import { verifySessionStorage } from '#app/utils/verification.server.ts'
 import { type VerifyFunctionArgs } from './verify.tsx'
 
@@ -41,11 +41,9 @@ export const prefilledProfileKey = 'prefilledProfile'
 
 const SignupFormSchema = z.object({
 	imageUrl: z.string().optional(),
-	username: UsernameSchema,
-	name: NameSchema,
-	agreeToTermsOfServiceAndPrivacyPolicy: z.boolean({
-		required_error: 'You must agree to the terms of service and privacy policy',
-	}),
+	email: EmailSchema,
+	firstName: NameSchema,
+	lastName: NameSchema,
 	remember: z.boolean().optional(),
 	redirectTo: z.string().optional(),
 })
@@ -116,14 +114,14 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	const submission = await parse(formData, {
 		schema: SignupFormSchema.superRefine(async (data, ctx) => {
 			const existingUser = await prisma.user.findUnique({
-				where: { username: data.username },
+				where: { email: data.email },
 				select: { id: true },
 			})
 			if (existingUser) {
 				ctx.addIssue({
-					path: ['username'],
+					path: ['email'],
 					code: z.ZodIssueCode.custom,
-					message: 'A user already exists with this username',
+					message: 'A user already exists with this email',
 				})
 				return
 			}
@@ -232,35 +230,34 @@ export default function SignupRoute() {
 						</div>
 					) : null}
 					<Field
-						labelProps={{ htmlFor: fields.username.id, children: 'Username' }}
+						labelProps={{ htmlFor: fields.email.id, children: 'Email' }}
 						inputProps={{
-							...conform.input(fields.username),
-							autoComplete: 'username',
+							...conform.input(fields.email),
+							autoComplete: 'email',
 							className: 'lowercase',
 						}}
-						errors={fields.username.errors}
+						errors={fields.email.errors}
 					/>
 					<Field
-						labelProps={{ htmlFor: fields.name.id, children: 'Name' }}
-						inputProps={{
-							...conform.input(fields.name),
-							autoComplete: 'name',
+						labelProps={{
+							htmlFor: fields.firstName.id,
+							children: 'First Name',
 						}}
-						errors={fields.name.errors}
+						inputProps={{
+							...conform.input(fields.firstName),
+							autoComplete: 'given-name',
+						}}
+						errors={fields.firstName.errors}
+					/>
+					<Field
+						labelProps={{ htmlFor: fields.lastName.id, children: 'Last Name' }}
+						inputProps={{
+							...conform.input(fields.lastName),
+							autoComplete: 'family-name',
+						}}
+						errors={fields.lastName.errors}
 					/>
 
-					<CheckboxField
-						labelProps={{
-							htmlFor: fields.agreeToTermsOfServiceAndPrivacyPolicy.id,
-							children:
-								'Do you agree to our Terms of Service and Privacy Policy?',
-						}}
-						buttonProps={conform.input(
-							fields.agreeToTermsOfServiceAndPrivacyPolicy,
-							{ type: 'checkbox' },
-						)}
-						errors={fields.agreeToTermsOfServiceAndPrivacyPolicy.errors}
-					/>
 					<CheckboxField
 						labelProps={{
 							htmlFor: fields.remember.id,

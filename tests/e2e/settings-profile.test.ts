@@ -13,10 +13,12 @@ test('Users can update their basic info', async ({ page, login }) => {
 
 	const newUserData = createUser()
 
-	await page.getByRole('textbox', { name: /^name/i }).fill(newUserData.name)
 	await page
-		.getByRole('textbox', { name: /^username/i })
-		.fill(newUserData.username)
+		.getByRole('textbox', { name: /^first name/i })
+		.fill(newUserData.firstName)
+	await page
+		.getByRole('textbox', { name: /^last name/i })
+		.fill(newUserData.lastName)
 
 	await page.getByRole('button', { name: /^save/i }).click()
 })
@@ -41,13 +43,13 @@ test('Users can update their password', async ({ page, login }) => {
 
 	await expect(page).toHaveURL(`/settings/profile`)
 
-	const { username } = user
+	const { email } = user
 	expect(
-		await verifyUserPassword({ username }, oldPassword),
+		await verifyUserPassword({ email }, oldPassword),
 		'Old password still works',
 	).toEqual(null)
 	expect(
-		await verifyUserPassword({ username }, newPassword),
+		await verifyUserPassword({ email }, newPassword),
 		'New password does not work',
 	).toEqual({ id: user.id })
 })
@@ -57,7 +59,7 @@ test('Users can update their profile photo', async ({ page, login }) => {
 	await page.goto('/settings/profile')
 
 	const beforeSrc = await page
-		.getByRole('img', { name: user.name ?? user.username })
+		.getByRole('img', { name: user.firstName ?? '' })
 		.getAttribute('src')
 
 	await page.getByRole('link', { name: /change profile photo/i }).click()
@@ -76,7 +78,7 @@ test('Users can update their profile photo', async ({ page, login }) => {
 	).toHaveURL(`/settings/profile`)
 
 	const afterSrc = await page
-		.getByRole('img', { name: user.name ?? user.username })
+		.getByRole('img', { name: user.firstName ?? '' })
 		.getAttribute('src')
 
 	expect(beforeSrc).not.toEqual(afterSrc)

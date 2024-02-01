@@ -6,11 +6,12 @@ import { ErrorList } from '#app/components/forms.tsx'
 import { SearchBar } from '#app/components/search-bar.tsx'
 import { prisma } from '#app/utils/db.server.ts'
 import { cn, getUserImgSrc, useDelayedIsPending } from '#app/utils/misc.tsx'
+import { getUserFullName } from '#app/utils/user'
 
 const UserSearchResultSchema = z.object({
 	id: z.string(),
-	username: z.string(),
-	name: z.string().nullable(),
+	firstName: z.string(),
+	lastName: z.string(),
 	imageId: z.string().nullable(),
 })
 
@@ -24,11 +25,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 	const like = `%${searchTerm ?? ''}%`
 	const rawUsers = await prisma.$queryRaw`
-		SELECT User.id, User.username, User.name, UserImage.id AS imageId
+		SELECT User.id, User.firstName, User.lastName, UserImage.id AS imageId
 		FROM User
 		LEFT JOIN UserImage ON User.id = UserImage.userId
-		WHERE User.username LIKE ${like}
-		OR User.name LIKE ${like}
+		WHERE User.lastName LIKE ${like}
+		OR User.firstName LIKE ${like}
 		ORDER BY (
 			SELECT Note.updatedAt
 			FROM Note
@@ -77,21 +78,16 @@ export default function UsersRoute() {
 							{data.users.map(user => (
 								<li key={user.id}>
 									<Link
-										to={user.username}
+										to={user.id}
 										className="flex h-36 w-44 flex-col items-center justify-center rounded-lg bg-muted px-5 py-3"
 									>
 										<img
-											alt={user.name ?? user.username}
+											alt=""
 											src={getUserImgSrc(user.imageId)}
 											className="h-16 w-16 rounded-full"
 										/>
-										{user.name ? (
-											<span className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-body-md">
-												{user.name}
-											</span>
-										) : null}
-										<span className="w-full overflow-hidden text-ellipsis text-center text-body-sm text-muted-foreground">
-											{user.username}
+										<span className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-body-md">
+											{getUserFullName(user)}
 										</span>
 									</Link>
 								</li>

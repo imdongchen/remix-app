@@ -287,3 +287,7 @@ export async function downloadFile(url: string, retries: number = 0) {
 		return downloadFile(url, retries + 1)
 	}
 }
+
+export function capitalizeFirstLetter(str: string) {
+	return str.charAt(0).toUpperCase() + str.slice(1)
+}

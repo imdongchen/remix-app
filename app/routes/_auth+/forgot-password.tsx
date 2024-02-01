@@ -18,11 +18,11 @@ import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { prisma } from '#app/utils/db.server.ts'
 import { sendEmail } from '#app/utils/email.server.ts'
 import { checkHoneypot } from '#app/utils/honeypot.server.ts'
-import { EmailSchema, UsernameSchema } from '#app/utils/user-validation.ts'
+import { EmailSchema } from '#app/utils/user-validation.ts'
 import { prepareVerification } from './verify.tsx'
 
 const ForgotPasswordSchema = z.object({
-	usernameOrEmail: z.union([EmailSchema, UsernameSchema]),
+	userEmail: EmailSchema,
 })
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -30,26 +30,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	await validateCSRF(formData, request.headers)
 	checkHoneypot(formData)
 	const submission = await parse(formData, {
-		schema: ForgotPasswordSchema.superRefine(async (data, ctx) => {
-			const user = await prisma.user.findFirst({
-				where: {
-					OR: [
-						{ email: data.usernameOrEmail },
-						{ username: data.usernameOrEmail },
-					],
-				},
-				select: { id: true },
-			})
-			if (!user) {
-				ctx.addIssue({
-					path: ['usernameOrEmail'],
-					code: z.ZodIssueCode.custom,
-					message: 'No user exists with this username or email',
-				})
-				return
-			}
-		}),
-		async: true,
+		schema: ForgotPasswordSchema,
 	})
 	if (submission.intent !== 'submit') {
 		return json({ status: 'idle', submission } as const)
@@ -57,18 +38,18 @@ export async function action({ request }: ActionFunctionArgs) {
 	if (!submission.value) {
 		return json({ status: 'error', submission } as const, { status: 400 })
 	}
-	const { usernameOrEmail } = submission.value
+	const { userEmail } = submission.value
 
 	const user = await prisma.user.findFirstOrThrow({
-		where: { OR: [{ email: usernameOrEmail }, { username: usernameOrEmail }] },
-		select: { email: true, username: true },
+		where: { email: userEmail },
+		select: { email: true },
 	})
 
 	const { verifyUrl, redirectTo, otp } = await prepareVerification({
 		period: 10 * 60,
 		request,
 		type: 'reset-password',
-		target: usernameOrEmail,
+		target: userEmail,
 	})
 
 	const response = await sendEmail({
@@ -147,14 +128,14 @@ export default function ForgotPasswordRoute() {
 						<div>
 							<Field
 								labelProps={{
-									htmlFor: fields.usernameOrEmail.id,
-									children: 'Username or Email',
+									htmlFor: fields.userEmail.id,
+									children: 'Email',
 								}}
 								inputProps={{
 									autoFocus: true,
-									...conform.input(fields.usernameOrEmail),
+									...conform.input(fields.userEmail),
 								}}
-								errors={fields.usernameOrEmail.errors}
+								errors={fields.userEmail.errors}
 							/>
 						</div>
 						<ErrorList errors={form.errors} id={form.errorId} />

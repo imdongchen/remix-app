@@ -34,7 +34,7 @@ import { checkHoneypot } from '#app/utils/honeypot.server.ts'
 import { combineResponseInits, useIsPending } from '#app/utils/misc.tsx'
 import { authSessionStorage } from '#app/utils/session.server.ts'
 import { redirectWithToast } from '#app/utils/toast.server.ts'
-import { PasswordSchema, UsernameSchema } from '#app/utils/user-validation.ts'
+import { EmailSchema, PasswordSchema } from '#app/utils/user-validation.ts'
 import { verifySessionStorage } from '#app/utils/verification.server.ts'
 import { getRedirectToUrl, type VerifyFunctionArgs } from './verify.tsx'
 
@@ -183,7 +183,7 @@ export async function shouldRequestTwoFA(request: Request) {
 }
 
 const LoginFormSchema = z.object({
-	username: UsernameSchema,
+	email: EmailSchema,
 	password: PasswordSchema,
 	redirectTo: z.string().optional(),
 	remember: z.boolean().optional(),
@@ -208,7 +208,7 @@ export async function action({ request }: ActionFunctionArgs) {
 				if (!session) {
 					ctx.addIssue({
 						code: z.ZodIssueCode.custom,
-						message: 'Invalid username or password',
+						message: 'Invalid email or password' + JSON.stringify(data),
 					})
 					return z.NEVER
 				}
@@ -226,7 +226,7 @@ export async function action({ request }: ActionFunctionArgs) {
 		return json({ status: 'idle', submission } as const)
 	}
 	if (!submission.value?.session) {
-		return json({ status: 'error', submission } as const, { status: 400 })
+		return json({ status: 'error', submission } as const, { status: 409 })
 	}
 
 	const { session, remember, redirectTo } = submission.value
@@ -273,21 +273,21 @@ export default function LoginPage() {
 							<AuthenticityTokenInput />
 							<HoneypotInputs />
 							<Field
-								labelProps={{ children: 'Username' }}
+								labelProps={{ children: 'Email' }}
 								inputProps={{
-									...conform.input(fields.username),
+									...conform.input(fields.email),
 									autoFocus: true,
-									className: 'lowercase',
-									autoComplete: 'username',
+									// className: 'lowercase',
+									autoComplete: 'email',
 								}}
-								errors={fields.username.errors}
+								errors={fields.email.errors}
 							/>
 
 							<Field
 								labelProps={{ children: 'Password' }}
 								inputProps={{
 									...conform.input(fields.password, {
-										type: 'password',
+										// type: 'password',
 									}),
 									autoComplete: 'current-password',
 								}}

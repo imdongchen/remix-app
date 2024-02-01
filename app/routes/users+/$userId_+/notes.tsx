@@ -5,18 +5,18 @@ import { GeneralErrorBoundary } from '#app/components/error-boundary.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
 import { prisma } from '#app/utils/db.server.ts'
 import { cn, getUserImgSrc } from '#app/utils/misc.tsx'
-import { useOptionalUser } from '#app/utils/user.ts'
+import { getUserFullName, useOptionalUser } from '#app/utils/user.ts'
 
 export async function loader({ params }: LoaderFunctionArgs) {
 	const owner = await prisma.user.findFirst({
 		select: {
 			id: true,
-			name: true,
-			username: true,
+			firstName: true,
+			lastName: true,
 			image: { select: { id: true } },
 			notes: { select: { id: true, title: true } },
 		},
-		where: { username: params.username },
+		where: { id: params.userId },
 	})
 
 	invariantResponse(owner, 'Owner not found', { status: 404 })
@@ -28,7 +28,7 @@ export default function NotesRoute() {
 	const data = useLoaderData<typeof loader>()
 	const user = useOptionalUser()
 	const isOwner = user?.id === data.owner.id
-	const ownerDisplayName = data.owner.name ?? data.owner.username
+	const ownerDisplayName = getUserFullName(data.owner)
 	const navLinkDefaultClassName =
 		'line-clamp-2 block rounded-l-full py-2 pl-8 pr-6 text-base lg:text-xl'
 	return (
@@ -37,7 +37,7 @@ export default function NotesRoute() {
 				<div className="relative col-span-1">
 					<div className="absolute inset-0 flex flex-col">
 						<Link
-							to={`/users/${data.owner.username}`}
+							to={`/users/${data.owner.id}`}
 							className="flex flex-col items-center justify-center gap-2 bg-muted pb-4 pl-8 pr-4 pt-12 lg:flex-row lg:justify-start lg:gap-4"
 						>
 							<img
@@ -91,9 +91,7 @@ export function ErrorBoundary() {
 	return (
 		<GeneralErrorBoundary
 			statusHandlers={{
-				404: ({ params }) => (
-					<p>No user with the username "{params.username}" exists</p>
-				),
+				404: () => <p>User not found.</p>,
 			}}
 		/>
 	)

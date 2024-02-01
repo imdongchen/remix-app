@@ -66,7 +66,9 @@ test('when a user is logged in, it creates the connection', async () => {
 		expect.objectContaining({
 			title: 'Connected',
 			type: 'success',
-			description: expect.stringContaining(githubUser.profile.login),
+			description: expect.stringContaining(
+				githubUser.primaryEmail.toLowerCase(),
+			),
 		}),
 	)
 	const connection = await prisma.connection.findFirst({
@@ -101,7 +103,9 @@ test(`when a user is logged in and has already connected, it doesn't do anything
 	expect(response).toSendToast(
 		expect.objectContaining({
 			title: 'Already Connected',
-			description: expect.stringContaining(githubUser.profile.login),
+			description: expect.stringContaining(
+				githubUser.primaryEmail.toLowerCase(),
+			),
 		}),
 	)
 })
@@ -118,7 +122,7 @@ test('when a user exists with the same email, create connection and make session
 	await expect(response).toSendToast(
 		expect.objectContaining({
 			type: 'message',
-			description: expect.stringContaining(githubUser.profile.login),
+			description: expect.stringContaining(email),
 		}),
 	)
 

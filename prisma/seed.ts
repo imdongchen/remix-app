@@ -69,7 +69,7 @@ async function seed() {
 				select: { id: true },
 				data: {
 					...userData,
-					password: { create: createPassword(userData.username) },
+					password: { create: createPassword('testtest') },
 					image: { create: userImages[index % userImages.length] },
 					roles: { connect: { name: 'user' } },
 					notes: {
@@ -138,10 +138,10 @@ async function seed() {
 		select: { id: true },
 		data: {
 			email: 'kody@kcd.dev',
-			username: 'kody',
-			name: 'Kody',
+			firstName: 'test',
+			lastName: 'testie',
 			image: { create: kodyImages.kodyUser },
-			password: { create: createPassword('kodylovesyou') },
+			password: { create: createPassword('testtest') },
 			connections: {
 				create: { providerName: 'github', providerId: githubUser.profile.id },
 			},

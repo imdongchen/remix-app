@@ -6,20 +6,18 @@ import { Spacer } from '#app/components/spacer.tsx'
 import { Button } from '#app/components/ui/button.tsx'
 import { Icon } from '#app/components/ui/icon.tsx'
 import { prisma } from '#app/utils/db.server.ts'
-import { getUserImgSrc } from '#app/utils/misc.tsx'
-import { useOptionalUser } from '#app/utils/user.ts'
+import { getUserFullName, useOptionalUser } from '#app/utils/user.ts'
 
 export async function loader({ params }: LoaderFunctionArgs) {
 	const user = await prisma.user.findFirst({
 		select: {
 			id: true,
-			name: true,
-			username: true,
+			firstName: true,
+			lastName: true,
 			createdAt: true,
-			image: { select: { id: true } },
 		},
 		where: {
-			username: params.username,
+			id: params.userId,
 		},
 	})
 
@@ -31,7 +29,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 export default function ProfileRoute() {
 	const data = useLoaderData<typeof loader>()
 	const user = data.user
-	const userDisplayName = user.name ?? user.username
+	const userDisplayName = getUserFullName(user)
 	const loggedInUser = useOptionalUser()
 	const isLoggedInUser = data.user.id === loggedInUser?.id
 
@@ -44,7 +42,7 @@ export default function ProfileRoute() {
 					<div className="absolute -top-40">
 						<div className="relative">
 							<img
-								src={getUserImgSrc(data.user.image?.id)}
+								src=""
 								alt={userDisplayName}
 								className="h-52 w-52 rounded-full object-cover"
 							/>
@@ -99,7 +97,9 @@ export default function ProfileRoute() {
 }
 
 export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
-	const displayName = data?.user.name ?? params.username
+	const displayName = getUserFullName(
+		data?.user ?? { firstName: '', lastName: '' },
+	)
 	return [
 		{ title: `${displayName} | Epic Notes` },
 		{
@@ -113,9 +113,7 @@ export function ErrorBoundary() {
 	return (
 		<GeneralErrorBoundary
 			statusHandlers={{
-				404: ({ params }) => (
-					<p>No user with the username "{params.username}" exists</p>
-				),
+				404: () => <p>User not found.</p>,
 			}}
 		/>
 	)
