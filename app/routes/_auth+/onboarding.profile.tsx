@@ -1,6 +1,5 @@
 import { conform, useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
-import { invariant } from '@epic-web/invariant'
 import {
 	json,
 	redirect,
@@ -16,7 +15,6 @@ import {
 } from '@remix-run/react'
 import { AuthenticityTokenInput } from 'remix-utils/csrf/react'
 import { HoneypotInputs } from 'remix-utils/honeypot/react'
-import { safeRedirect } from 'remix-utils/safe-redirect'
 import { z } from 'zod'
 import { CheckboxField, ErrorList, Field } from '#app/components/forms.tsx'
 import { Spacer } from '#app/components/spacer.tsx'
@@ -26,15 +24,12 @@ import { validateCSRF } from '#app/utils/csrf.server.ts'
 import { checkHoneypot } from '#app/utils/honeypot.server.ts'
 import { useIsPending } from '#app/utils/misc.tsx'
 import { authSessionStorage } from '#app/utils/session.server.ts'
-import { redirectWithToast } from '#app/utils/toast.server.ts'
 import {
 	NameSchema,
 	PasswordAndConfirmPasswordSchema,
 } from '#app/utils/user-validation.ts'
 import { verifySessionStorage } from '#app/utils/verification.server.ts'
-import { type VerifyFunctionArgs } from './verify.tsx'
-
-const onboardingEmailSessionKey = 'onboardingEmail'
+import { onboardingEmailSessionKey } from './onboarding.index'
 
 const SignupFormSchema = z
 	.object({
@@ -103,26 +98,12 @@ export async function action({ request }: ActionFunctionArgs) {
 		await verifySessionStorage.destroySession(verifySession),
 	)
 
-	return redirectWithToast(
-		safeRedirect(redirectTo),
-		{ title: 'Welcome', description: 'Thanks for signing up!' },
-		{ headers },
-	)
-}
-
-export async function handleVerification({ submission }: VerifyFunctionArgs) {
-	invariant(submission.value, 'submission.value should be defined by now')
-	const verifySession = await verifySessionStorage.getSession()
-	verifySession.set(onboardingEmailSessionKey, submission.value.target)
-	return redirect('/onboarding', {
-		headers: {
-			'set-cookie': await verifySessionStorage.commitSession(verifySession),
-		},
-	})
+	const redirectToParam = redirectTo ? `?redirectTo=${redirectTo}` : ''
+	return redirect(`/onboarding/company${redirectToParam}`, { headers })
 }
 
 export const meta: MetaFunction = () => {
-	return [{ title: 'Setup Epic Notes Account' }]
+	return [{ title: 'Set up TruckLink Account' }]
 }
 
 export default function SignupRoute() {

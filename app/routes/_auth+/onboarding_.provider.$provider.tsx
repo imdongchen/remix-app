@@ -34,8 +34,8 @@ import { redirectWithToast } from '#app/utils/toast.server.ts'
 import { EmailSchema, NameSchema } from '#app/utils/user-validation.ts'
 import { verifySessionStorage } from '#app/utils/verification.server.ts'
 import { type VerifyFunctionArgs } from './verify.tsx'
+import { onboardingEmailSessionKey } from './onboarding.index.tsx'
 
-export const onboardingEmailSessionKey = 'onboardingEmail'
 export const providerIdKey = 'providerId'
 export const prefilledProfileKey = 'prefilledProfile'
 

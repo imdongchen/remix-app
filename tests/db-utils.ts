@@ -12,6 +12,17 @@ export function createUser() {
 	return { firstName, lastName, email }
 }
 
+export function createCompany() {
+	return {
+		name: faker.company.name(),
+		addressLine1: faker.location.streetAddress(),
+		addressLine2: faker.location.secondaryAddress(),
+		city: faker.location.city(),
+		state: faker.location.state(),
+		zipCode: faker.location.zipCode(),
+	}
+}
+
 export function createPassword(password: string = faker.internet.password()) {
 	return {
 		hash: bcrypt.hashSync(password, 10),

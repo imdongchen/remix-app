@@ -18,10 +18,10 @@ import {
 import { verifySessionStorage } from '#app/utils/verification.server.ts'
 import { handleNewSession } from './login.tsx'
 import {
-	onboardingEmailSessionKey,
 	prefilledProfileKey,
 	providerIdKey,
-} from './onboarding_.$provider.tsx'
+} from './onboarding_.provider.$provider.tsx'
+import { onboardingEmailSessionKey } from './onboarding.index'
 
 const destroyRedirectTo = { 'set-cookie': destroyRedirectToHeader }
 

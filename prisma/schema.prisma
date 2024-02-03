@@ -25,7 +25,7 @@ model User {
   roles       Role[]
   sessions    Session[]
   connections Connection[]
-  Company     Company?     @relation(fields: [companyId], references: [id])
+  company     Company?     @relation(fields: [companyId], references: [id])
   companyId   String?
 }
 
@@ -184,12 +184,13 @@ model Company {
 }
 
 model Address {
-  id      String @id @default(cuid())
-  street  String
-  city    String
-  state   String
-  zip     String
-  country String
+  id           String  @id @default(cuid())
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  zipCode      String
+  country      String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
