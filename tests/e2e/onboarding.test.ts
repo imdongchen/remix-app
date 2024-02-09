@@ -3,7 +3,12 @@ import { faker } from '@faker-js/faker'
 import { prisma } from '#app/utils/db.server.ts'
 import { getUserFullName } from '#app/utils/user'
 import { readEmail } from '#tests/mocks/utils.ts'
-import { createUser, expect, test as base } from '#tests/playwright-utils.ts'
+import {
+	createUser,
+	expect,
+	test as base,
+	createCompany,
+} from '#tests/playwright-utils.ts'
 
 const URL_REGEX = /(?<url>https?:\/\/[^\s$.?#].[^\s]*)/
 const CODE_REGEX = /Here's your verification code: (?<code>[\d\w]+)/
@@ -18,13 +23,23 @@ const test = base.extend<{
 		lastName: string
 		email: string
 		password: string
+		company: {
+			name: string
+			addressLine1: string
+			addressLine2?: string
+			city: string
+			state: string
+			zipCode: string
+		}
 	}
 }>({
 	getOnboardingData: async ({}, use) => {
 		const userData = createUser()
+		const companyData = createCompany()
 		await use(() => {
 			const onboardingData = {
 				...userData,
+				company: companyData,
 				password: faker.internet.password(),
 			}
 			return onboardingData
@@ -74,7 +89,7 @@ test('onboarding with link', async ({ page, getOnboardingData }) => {
 		.getByRole('button', { name: /submit/i })
 		.click()
 
-	await expect(page).toHaveURL(`/onboarding`)
+	await expect(page).toHaveURL(`/onboarding/profile`)
 	await page
 		.getByRole('textbox', { name: /^first name/i })
 		.fill(onboardingData.firstName)
@@ -91,7 +106,26 @@ test('onboarding with link', async ({ page, getOnboardingData }) => {
 
 	await page.getByRole('button', { name: /Create an account/i }).click()
 
-	await expect(page).toHaveURL(`/`)
+	await expect(page).toHaveURL(`/onboarding/company`)
+	await page
+		.getByRole('textbox', { name: /^company name/i })
+		.fill(onboardingData.company.name)
+	await page
+		.getByRole('textbox', { name: /^address line 1/i })
+		.fill(onboardingData.company.addressLine1)
+	await page
+		.getByRole('textbox', { name: /^address line 2/i })
+		.fill(onboardingData.company.addressLine2 || '')
+	await page
+		.getByRole('textbox', { name: /^city/i })
+		.fill(onboardingData.company.city)
+	await page
+		.getByRole('textbox', { name: /^state/i })
+		.fill(onboardingData.company.state)
+	await page
+		.getByRole('textbox', { name: /^zip code/i })
+		.fill(onboardingData.company.zipCode)
+	await page.getByRole('button', { name: /Continue/i }).click()
 
 	await page.getByRole('link', { name: onboardingData.firstName }).click()
 	await page.getByRole('menuitem', { name: /profile/i }).click()
@@ -131,7 +165,7 @@ test('onboarding with a short code', async ({ page, getOnboardingData }) => {
 	await page.getByRole('textbox', { name: /code/i }).fill(code)
 	await page.getByRole('button', { name: /submit/i }).click()
 
-	await expect(page).toHaveURL(`/onboarding`)
+	await expect(page).toHaveURL(`/onboarding/profile`)
 })
 
 test('login as existing user', async ({ page, insertNewUser }) => {

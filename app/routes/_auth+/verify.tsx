@@ -24,7 +24,7 @@ import {
 	handleVerification as handleLoginTwoFactorVerification,
 	shouldRequestTwoFA,
 } from './login.tsx'
-import { handleVerification as handleOnboardingVerification } from './onboarding.tsx'
+import { handleVerification as handleOnboardingVerification } from './onboarding.index.tsx'
 import { handleVerification as handleResetPasswordVerification } from './reset-password.tsx'
 
 export const codeQueryParam = 'code'
